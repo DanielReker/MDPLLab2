@@ -21,6 +21,8 @@ int64_t calculateRel16InstructionLen(const std::string& mnemonic) {
     return static_cast<int64_t>(rel16Opcodes[mnemonic].size()) + 2;
 }
 
+std::map<std::string, std::vector<LineData*>> toReencode;
+
 ByteSequence encodeRel16Instruction(const std::string& mnemonic, int64_t offset) {
     ByteSequence encodedInstruction = rel16Opcodes[mnemonic]; // Get proper opcode
 
@@ -31,13 +33,19 @@ ByteSequence encodeRel16Instruction(const std::string& mnemonic, int64_t offset)
     return encodedInstruction;
 }
 
-ByteSequence encodeRel16Instruction(const LineData& from, std::string& labelTo) {
-    // Jumps are done from end of current instruction (offset of "from" + length of instruction)
-    // to begin of other instruction (offset of "to")
-    return encodeRel16Instruction(
-        from.parsed.mnemonic,
-        labelToLineData[labelTo]->offset - (from.offset + calculateRel16InstructionLen(from.parsed.mnemonic))
-    );
+ByteSequence encodeRel16Instruction(LineData& from, std::string& labelTo) {
+    auto instructionSize = calculateRel16InstructionLen(from.parsed.mnemonic);
+    if (labelToLineData.contains(labelTo)) {
+        // Jumps are done from end of current instruction (offset of "from" + length of instruction)
+        // to begin of other instruction (offset of "to")
+        return encodeRel16Instruction(
+            from.parsed.mnemonic,
+            labelToLineData[labelTo]->offset - (from.offset + instructionSize)
+        );
+    } else { // Unknown labelTo (probably forward reference)
+        toReencode[labelTo].push_back(&from); // Mark to reencode later
+        return ByteSequence(instructionSize, std::byte(0x00)); // Dummy with proper size
+    }
 }
 
 
@@ -98,6 +106,12 @@ int main() {
                 }
                 // Add parsed argument bytes to output
                 lineData.bytes.insert(lineData.bytes.end(), bytes.begin(), bytes.end());
+            }
+        }
+
+        if (toReencode.contains(lineData.parsed.label)) {
+            for (auto lineDataPtr : toReencode[lineData.parsed.label]) {
+                lineDataPtr->bytes = encodeRel16Instruction(*lineDataPtr, lineData.parsed.label);
             }
         }
 
