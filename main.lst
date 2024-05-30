@@ -1,0 +1,39 @@
+     1                                      | 	; Program is x86 16 bit
+     2                                      | 	BITS 16
+     3                                      | 
+     4                                      | 	org 0x100 ; DOS loads .com programs at 0x100 offset
+     5                                      | 
+     6                                      | 	; examples from NASM docs
+     7  00000100:  55                       | 	db    0x55                ; just the byte 0x55 
+     8  00000101:  55 56 57                 | 	db    0x55,0x56,0x57      ; three bytes in succession 
+     9                                      | testLabel1: ; some test labels
+    10  00000104:  61 55                    | 	db    'a',0x55            ; character constants are OK 
+    11  00000106:  68 65 6C 6C 6F 0D 0A 24  | 	db    'hello',13,10,'$'   ; so are string constants 
+    12  0000010E:  34 12                    | 	dw    0x1234              ; 0x34 0x12 
+    13                                      | _Label_2:
+    14  00000110:  61 00                    | 	dw    'a'                 ; 0x61 0x00 (it's just a number) 
+    15  00000112:  61 62                    | 	dw    'ab'                ; 0x61 0x62 (character constant) 
+    16  00000114:  61 62 63 00              | 	dw    'abc'               ; 0x61 0x62 0x63 0x00 (string) 
+    17  00000118:  78 56 34 12              | 	dd    0x12345678          ; 0x78 0x56 0x34 0x12 
+    18                                      | 		
+    19                                      | 		
+    20                                      | 		
+    21                                      | 	testLabel:
+    22  0000011C:  E9 FD FF                 | 		jmp testLabel	
+    23                                      | 		
+    24  0000011F:  E9 FA FF                 | 		jmp testLabel
+    25                                      | 		
+    26                                      | 	moreLabels: ; If ...
+    27  00000122:  0F 8F 85 07              | 		jg  $+1929
+    28  00000126:  0F 8C FC FF              | 		jl  $+0
+    29                                      | 
+    30                                      | 	otherLabel1: ; Else ???
+    31  0000012A:  E9 8D F4                 | 		jmp $-2928
+    32                                      | 	; end of logic
+    33                                      | 
+    34                                      | 	label_name: ; exit program
+    35  0000012D:  0F 8C 00 00              | 		jl  $+4
+    36  00000131:  E9 82 FF                 | 		jmp $-123
+    37  00000134:  0F 8F FB FF              | 		jg  $-1 ;end
+    38                                      | 		
+    39  00000138:  E9 E7 FF                 | 		jmp moreLabels
